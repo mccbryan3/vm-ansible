@@ -1,0 +1,2 @@
+- name: Import the host-config task
+  import_tasks: task.host-config.yaml

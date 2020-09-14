@@ -1,0 +1,85 @@
+---
+
+      - name: Debug the vm host
+        debug:
+          msg: "Checking {{ vmhost }} in {{ vcenter_server }}"
+
+      - name: Place host in maintenance mode
+        vmware_maintenancemode:
+          hostname: "{{ vcenter_server }}"
+          username: "{{ vcenter_admin }}"
+          password: "{{ vcenter_pass }}"
+          esxi_hostname: "{{ vmhost }}"
+          timeout: 3600
+          evacuate: yes
+          state: present
+          validate_certs: no
+
+      - name: Gather host facts
+        vmware_host_facts:
+          hostname: "{{ vcenter_server }}"
+          username: "{{ vcenter_admin }}"
+          password: "{{ vcenter_pass }}"
+          esxi_hostname: "{{ vmhost }}"
+          validate_certs: no
+        register: host_facts
+
+      - name: Debug host facts
+        debug:
+          msg: "{{ item.name }}"
+        with_items: "{{ (host_facts['ansible_facts']['ansible_datastore']) }}"
+        register: datastore_name
+
+      - name: Get the datastore UUID
+        shell:
+          cmd: sshpass -p "{{ vcenter_pass }}" -P 'Password:' ssh "{{ esxi_user }}@{{ vmhost }}" "esxcli storage vmfs extent list" | awk -F '\\s\\s+' 'FNR > 2  {print $2}'
+        register: esxcli_output
+        no_log: true
+
+      - name: Debug the esxcli output
+        debug:
+          msg: "{{ esxcli_output.stdout }}"
+
+      - name: Configure Local vSwitch
+        vmware_vswitch:
+          hostname: "{{ vmhost }}"
+          username: "{{ esxi_user }}"
+          password: "{{ vcenter_pass }}"
+          switch: vSwitch0
+          nics:
+            - vmnic0
+            - vmnic1
+          validate_certs: no
+
+      - name: Set advanced vmhost options ansible
+        vmware_host_config_manager:
+          hostname: "{{ vcenter_server }}"
+          username: "{{ vcenter_admin }}"
+          password: "{{ vcenter_pass }}"
+          esxi_hostname: "{{ vmhost }}"
+          validate_certs: no
+          options:
+            UserVars.SuppressShellWarning: 1
+            ScratchConfig.ConfiguredScratchLocation: "/vmfs/volumes/{{ esxcli_output.stdout }}"
+
+      - name: Set NTP vmhost
+        vmware_host_ntp:
+          hostname: "{{ vcenter_server }}"
+          username: "{{ vcenter_admin }}"
+          password: "{{ vcenter_pass }}"
+          esxi_hostname: "{{ vmhost }}"
+          validate_certs: no
+          ntp_servers:
+            - 10.3.91.11
+            - 10.3.92.11
+          verbose: yes
+        notify: ntpd_service_start
+      
+      - name: Set power management policy
+        vmware_host_powermgmt_policy:
+          hostname: "{{ vcenter_server }}"
+          username: "{{ vcenter_admin }}"
+          password: "{{ vcenter_pass }}"
+          esxi_hostname: "{{ vmhost }}"
+          validate_certs: no
+          policy: high-performance

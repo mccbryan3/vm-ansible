@@ -1,0 +1,12 @@
+---
+
+- name: ntpd_service_start
+  vmware_host_service_manager:
+    hostname: "{{ vcenter_server }}"
+    username: "{{ vcenter_admin }}"
+    password: "{{ vcenter_pass }}"
+    esxi_hostname: "{{ vmhost }}"
+    validate_certs: no
+    service_name: ntpd
+    service_policy: automatic
+    state: restart

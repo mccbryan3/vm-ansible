@@ -1,0 +1,8 @@
+vcenter_server: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_server')}}"
+datacenter: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_datacenter')}}"
+vm_folder: /
+vsphere_cluster: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_cluster')}}" 
+vcenter_admin: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_user')}}"
+vcenter_pass: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_password')}}"
+esxi_user: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:esxi_user')}}" 
+admin_password: "{{ lookup('hashi_vault', 'secret=kv/vcenter_n01-vcsa01:vsphere_password')}}"
